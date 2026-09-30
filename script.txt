@@ -1,0 +1,1394 @@
+--==================================================
+-- TEDDY PRIMEVAL EARTH
+-- COMPACT MOBILE GUI
+-- FARM + ZONE + QUEST + SETTINGS + FPS
+--==================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+
+local Player = Players.LocalPlayer
+if not Player then return end
+
+local PlayerGui = Player:WaitForChild("PlayerGui",10)
+if not PlayerGui then return end
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local GUI_NAME = "TeddyPrimevalCompact"
+
+local PINK = Color3.fromRGB(255,65,175)
+local LIGHT_PINK = Color3.fromRGB(255,145,220)
+local DARK = Color3.fromRGB(12,8,18)
+local PANEL = Color3.fromRGB(22,14,30)
+local PANEL2 = Color3.fromRGB(30,19,40)
+local WHITE = Color3.fromRGB(255,245,255)
+local MUTED = Color3.fromRGB(190,165,195)
+
+--==================================================
+-- REMOVE OLD
+--==================================================
+
+pcall(function()
+	local old = PlayerGui:FindFirstChild(GUI_NAME)
+	if old then
+		old:Destroy()
+	end
+end)
+
+--==================================================
+-- VARIABLES
+--==================================================
+
+local AutoFarm = false
+local FPSBoost = false
+local FarmZone = {}
+
+for i = 1,9 do
+	FarmZone[i] = true
+end
+
+_G.CurrentQuest = "None"
+_G.AutoEatRunning = false
+_G.AutoDrinkRunning = false
+_G.AutoRestRunning = false
+
+--==================================================
+-- ZONE COORDINATES
+--==================================================
+
+local L = {
+	{-144.54,-102.15,1032.19,-144.54,-87.15,1032.19},
+	{-617.92,143.39,-1130.44,-617.92,158.39,-1130.44},
+	{1449.99,77.16,-677.59,1449.99,92.16,-677.59},
+	{276.03,75.50,-1029.02,276.03,90.50,-1029.02},
+	{-513.23,75.73,-430.79,-513.23,90.73,-430.79},
+	{1090.65,66.03,467.14,1090.65,81.03,467.14},
+	{209.25,-32.79,-359.19,209.25,-17.79,-359.19},
+	{-170.20,109.98,388.42,-170.20,124.98,388.42},
+	{-69.11,-61.16,-1493.54,-69.11,-46.16,-1493.54}
+}
+
+--==================================================
+-- GUI HELPERS
+--==================================================
+
+local function Corner(obj,r)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0,r)
+	c.Parent = obj
+end
+
+local function Stroke(obj,color,size)
+	local s = Instance.new("UIStroke")
+	s.Color = color
+	s.Thickness = size or 1
+	s.Parent = obj
+end
+
+local function Button(parent,text)
+	local b = Instance.new("TextButton")
+	b.Text = text
+	b.TextColor3 = WHITE
+	b.TextSize = 13
+	b.Font = Enum.Font.GothamBold
+	b.BackgroundColor3 = PANEL2
+	b.BorderSizePixel = 0
+	b.AutoButtonColor = false
+	b.Parent = parent
+
+	Corner(b,9)
+	Stroke(b,Color3.fromRGB(80,50,90),1)
+
+	return b
+end
+
+local function Label(parent,text,size,color)
+	local l = Instance.new("TextLabel")
+	l.Text = text
+	l.TextColor3 = color or WHITE
+	l.TextSize = size or 12
+	l.Font = Enum.Font.GothamMedium
+	l.BackgroundTransparency = 1
+	l.Parent = parent
+	return l
+end
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = GUI_NAME
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
+
+--==================================================
+-- OPEN BUTTON
+--==================================================
+
+local OpenButton = Button(ScreenGui,"🧸")
+OpenButton.Size = UDim2.fromOffset(48,48)
+OpenButton.Position = UDim2.new(0,12,.5,-24)
+OpenButton.TextSize = 22
+OpenButton.Visible = false
+Stroke(OpenButton,PINK,2)
+
+--==================================================
+-- MAIN
+--==================================================
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(335,440)
+Main.AnchorPoint = Vector2.new(.5,.5)
+Main.Position = UDim2.fromScale(.5,.5)
+Main.BackgroundColor3 = DARK
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+Corner(Main,16)
+Stroke(Main,PINK,2)
+
+local Scale = Instance.new("UIScale")
+Scale.Name = "TeddyUIScale"
+Scale.Scale = 1
+Scale.Parent = Main
+
+--==================================================
+-- HEADER
+--==================================================
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1,0,0,48)
+Header.BackgroundColor3 = Color3.fromRGB(18,10,24)
+Header.BorderSizePixel = 0
+Header.Parent = Main
+
+Corner(Header,16)
+
+local Title = Label(
+	Header,
+	"🧸 TEDDY • PRIMEVAL",
+	15,
+	LIGHT_PINK
+)
+
+Title.Size = UDim2.new(1,-145,1,0)
+Title.Position = UDim2.fromOffset(12,0)
+Title.Font = Enum.Font.GothamBlack
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local SettingsButton = Button(Header,"⚙")
+SettingsButton.Size = UDim2.fromOffset(30,30)
+SettingsButton.Position = UDim2.new(1,-106,.5,-15)
+
+local Minimize = Button(Header,"−")
+Minimize.Size = UDim2.fromOffset(30,30)
+Minimize.Position = UDim2.new(1,-70,.5,-15)
+
+local Close = Button(Header,"×")
+Close.Size = UDim2.fromOffset(30,30)
+Close.Position = UDim2.new(1,-34,.5,-15)
+
+--==================================================
+-- TABS
+--==================================================
+
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1,-20,0,36)
+Tabs.Position = UDim2.fromOffset(10,55)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
+
+local MainTab = Button(Tabs,"MAIN")
+MainTab.Size = UDim2.new(1/3,-5,1,0)
+
+local ZoneTab = Button(Tabs,"ZONE")
+ZoneTab.Size = UDim2.new(1/3,-5,1,0)
+ZoneTab.Position = UDim2.new(1/3,2.5,0,0)
+
+local QuestTab = Button(Tabs,"QUEST")
+QuestTab.Size = UDim2.new(1/3,-5,1,0)
+QuestTab.Position = UDim2.new(2/3,5,0,0)
+
+--==================================================
+-- PAGES
+--==================================================
+
+local Pages = Instance.new("Frame")
+Pages.Size = UDim2.new(1,-20,1,-105)
+Pages.Position = UDim2.fromOffset(10,98)
+Pages.BackgroundTransparency = 1
+Pages.Parent = Main
+
+--==================================================
+-- MAIN PAGE
+--==================================================
+
+local MainPage = Instance.new("Frame")
+MainPage.Size = UDim2.fromScale(1,1)
+MainPage.BackgroundTransparency = 1
+MainPage.Parent = Pages
+
+local StatusBox = Instance.new("Frame")
+StatusBox.Size = UDim2.new(1,0,0,72)
+StatusBox.BackgroundColor3 = PANEL
+StatusBox.Parent = MainPage
+
+Corner(StatusBox,11)
+Stroke(StatusBox,Color3.fromRGB(75,40,85),1)
+
+local StatusTitle = Label(StatusBox,"★ QUEST STATUS",14,LIGHT_PINK)
+StatusTitle.Size = UDim2.new(1,-20,0,25)
+StatusTitle.Position = UDim2.fromOffset(10,8)
+StatusTitle.Font = Enum.Font.GothamBold
+StatusTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local QuestStatus = Label(StatusBox,"Đang chờ nhiệm vụ...",12,MUTED)
+QuestStatus.Size = UDim2.new(1,-20,0,25)
+QuestStatus.Position = UDim2.fromOffset(10,36)
+QuestStatus.TextXAlignment = Enum.TextXAlignment.Left
+
+--==================================================
+-- AUTO FARM BOX
+--==================================================
+
+local AutoBox = Instance.new("Frame")
+AutoBox.Size = UDim2.new(1,0,0,82)
+AutoBox.Position = UDim2.fromOffset(0,82)
+AutoBox.BackgroundColor3 = Color3.fromRGB(29,13,35)
+AutoBox.Parent = MainPage
+
+Corner(AutoBox,11)
+Stroke(AutoBox,PINK,1)
+
+local AutoTitle = Label(AutoBox,"⚡ AUTO FARM",15,WHITE)
+AutoTitle.Size = UDim2.new(1,-120,0,25)
+AutoTitle.Position = UDim2.fromOffset(12,12)
+AutoTitle.Font = Enum.Font.GothamBlack
+AutoTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local AutoDesc = Label(AutoBox,"Farm Zone tự động",11,MUTED)
+AutoDesc.Size = UDim2.new(1,-120,0,22)
+AutoDesc.Position = UDim2.fromOffset(12,40)
+AutoDesc.TextXAlignment = Enum.TextXAlignment.Left
+
+local AutoToggle = Button(AutoBox,"OFF")
+AutoToggle.Size = UDim2.fromOffset(85,40)
+AutoToggle.Position = UDim2.new(1,-97,.5,-20)
+
+--==================================================
+-- INFO
+--==================================================
+
+local InfoBox = Instance.new("Frame")
+InfoBox.Size = UDim2.new(1,0,0,180)
+InfoBox.Position = UDim2.fromOffset(0,174)
+InfoBox.BackgroundColor3 = PANEL
+InfoBox.Parent = MainPage
+
+Corner(InfoBox,11)
+Stroke(InfoBox,Color3.fromRGB(75,40,85),1)
+
+local Info = Label(
+	InfoBox,
+	"TEDDY CREDIT\n\n" ..
+	"• Auto Farm: Zone xanh\n" ..
+	"• Tất cả Zone xanh → đứng Z3\n" ..
+	"• Zone mất xanh → farm lại\n" ..
+	"• Quest tự động nhận diện\n\n" ..
+	"Right Alt: Ẩn / hiện menu",
+	12,
+	MUTED
+)
+
+Info.Size = UDim2.new(1,-25,1,-20)
+Info.Position = UDim2.fromOffset(12,10)
+Info.TextWrapped = true
+Info.TextXAlignment = Enum.TextXAlignment.Left
+Info.TextYAlignment = Enum.TextYAlignment.Top
+
+--==================================================
+-- ZONE PAGE
+--==================================================
+
+local ZonePage = Instance.new("Frame")
+ZonePage.Size = UDim2.fromScale(1,1)
+ZonePage.BackgroundTransparency = 1
+ZonePage.Visible = false
+ZonePage.Parent = Pages
+
+local ZoneTitle = Label(ZonePage,"● ZONE FARM",16,WHITE)
+ZoneTitle.Size = UDim2.new(1,0,0,30)
+ZoneTitle.Font = Enum.Font.GothamBlack
+ZoneTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local ZoneDesc = Label(
+	ZonePage,
+	"Xanh = farm • Đỏ = bỏ qua",
+	11,
+	MUTED
+)
+
+ZoneDesc.Size = UDim2.new(1,0,0,25)
+ZoneDesc.Position = UDim2.fromOffset(0,30)
+ZoneDesc.TextXAlignment = Enum.TextXAlignment.Left
+
+local ZoneGrid = Instance.new("Frame")
+ZoneGrid.Size = UDim2.new(1,0,0,300)
+ZoneGrid.Position = UDim2.fromOffset(0,62)
+ZoneGrid.BackgroundTransparency = 1
+ZoneGrid.Parent = ZonePage
+
+local Grid = Instance.new("UIGridLayout")
+Grid.CellSize = UDim2.new(1/3,-8,0,52)
+Grid.CellPadding = UDim2.fromOffset(7,7)
+Grid.Parent = ZoneGrid
+
+for i = 1,9 do
+
+	local b = Button(ZoneGrid,"Z"..i.." ✓")
+	b.BackgroundColor3 = Color3.fromRGB(45,100,55)
+
+	b.MouseButton1Click:Connect(function()
+
+		FarmZone[i] = not FarmZone[i]
+
+		if FarmZone[i] then
+			b.Text = "Z"..i.." ✓"
+			b.BackgroundColor3 =
+				Color3.fromRGB(45,100,55)
+		else
+			b.Text = "Z"..i.." ✕"
+			b.BackgroundColor3 =
+				Color3.fromRGB(105,40,40)
+		end
+	end)
+end
+
+--==================================================
+-- QUEST PAGE
+--==================================================
+
+local QuestPage = Instance.new("Frame")
+QuestPage.Size = UDim2.fromScale(1,1)
+QuestPage.BackgroundTransparency = 1
+QuestPage.Visible = false
+QuestPage.Parent = Pages
+
+local QuestTitle = Label(QuestPage,"★ QUEST",16,WHITE)
+QuestTitle.Size = UDim2.new(1,0,0,30)
+QuestTitle.Font = Enum.Font.GothamBlack
+QuestTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local QuestPageStatus =
+	Label(QuestPage,"Current Quest: Waiting...",12,LIGHT_PINK)
+
+QuestPageStatus.Size = UDim2.new(1,0,0,30)
+QuestPageStatus.Position = UDim2.fromOffset(0,30)
+QuestPageStatus.Font = Enum.Font.GothamBold
+QuestPageStatus.TextXAlignment = Enum.TextXAlignment.Left
+
+local EatButton = Button(QuestPage,"AUTO EAT : OFF")
+EatButton.Size = UDim2.new(1,0,0,52)
+EatButton.Position = UDim2.fromOffset(0,70)
+
+local DrinkButton = Button(QuestPage,"AUTO DRINK : OFF")
+DrinkButton.Size = UDim2.new(1,0,0,52)
+DrinkButton.Position = UDim2.fromOffset(0,130)
+
+local RestButton = Button(QuestPage,"AUTO REST : OFF")
+RestButton.Size = UDim2.new(1,0,0,52)
+RestButton.Position = UDim2.fromOffset(0,190)
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local SettingsPanel = Instance.new("Frame")
+SettingsPanel.Size = UDim2.fromOffset(250,205)
+SettingsPanel.Position = UDim2.new(1,-258,0,52)
+SettingsPanel.BackgroundColor3 = PANEL
+SettingsPanel.Visible = false
+SettingsPanel.ZIndex = 100
+SettingsPanel.Parent = Main
+
+Corner(SettingsPanel,12)
+Stroke(SettingsPanel,PINK,1.5)
+
+local SettingsTitle =
+	Label(SettingsPanel,"⚙ SETTINGS",15,LIGHT_PINK)
+
+SettingsTitle.Size = UDim2.new(1,-20,0,28)
+SettingsTitle.Position = UDim2.fromOffset(10,8)
+SettingsTitle.Font = Enum.Font.GothamBlack
+SettingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+SettingsTitle.ZIndex = 101
+
+local ScaleLabel =
+	Label(SettingsPanel,"Kích thước: 100%",12,WHITE)
+
+ScaleLabel.Size = UDim2.new(1,-20,0,24)
+ScaleLabel.Position = UDim2.fromOffset(10,40)
+ScaleLabel.Font = Enum.Font.GothamBold
+ScaleLabel.TextXAlignment = Enum.TextXAlignment.Left
+ScaleLabel.ZIndex = 101
+
+local SmallBtn = Button(SettingsPanel,"NHỎ")
+SmallBtn.Size = UDim2.fromOffset(68,34)
+SmallBtn.Position = UDim2.fromOffset(10,68)
+SmallBtn.ZIndex = 101
+
+local MediumBtn = Button(SettingsPanel,"VỪA")
+MediumBtn.Size = UDim2.fromOffset(68,34)
+MediumBtn.Position = UDim2.fromOffset(88,68)
+MediumBtn.ZIndex = 101
+
+local LargeBtn = Button(SettingsPanel,"LỚN")
+LargeBtn.Size = UDim2.fromOffset(68,34)
+LargeBtn.Position = UDim2.fromOffset(166,68)
+LargeBtn.ZIndex = 101
+
+local FPSButton =
+	Button(SettingsPanel,"⚡ FPS BOOST : OFF")
+
+FPSButton.Size = UDim2.new(1,-20,0,40)
+FPSButton.Position = UDim2.fromOffset(10,115)
+FPSButton.ZIndex = 101
+
+--==================================================
+-- SCALE
+--==================================================
+
+local function SetScale(value)
+
+	Scale.Scale = value
+
+	ScaleLabel.Text =
+		"Kích thước: "..math.floor(value*100).."%"
+
+	SmallBtn.BackgroundColor3 = PANEL2
+	MediumBtn.BackgroundColor3 = PANEL2
+	LargeBtn.BackgroundColor3 = PANEL2
+
+	if value < .9 then
+		SmallBtn.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+	elseif value > 1.1 then
+		LargeBtn.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+	else
+		MediumBtn.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+	end
+end
+
+SmallBtn.MouseButton1Click:Connect(function()
+	SetScale(.78)
+end)
+
+MediumBtn.MouseButton1Click:Connect(function()
+	SetScale(1)
+end)
+
+LargeBtn.MouseButton1Click:Connect(function()
+	SetScale(1.2)
+end)
+
+--==================================================
+-- FPS BOOST
+--==================================================
+
+local SavedEffects = {}
+
+local function SetFPS(value)
+
+	FPSBoost = value
+
+	if value then
+
+		for _,obj in ipairs(Lighting:GetChildren()) do
+
+			if obj:IsA("BloomEffect")
+			or obj:IsA("BlurEffect")
+			or obj:IsA("ColorCorrectionEffect")
+			or obj:IsA("SunRaysEffect")
+			or obj:IsA("DepthOfFieldEffect") then
+
+				SavedEffects[obj] = obj.Enabled
+				obj.Enabled = false
+			end
+		end
+
+		pcall(function()
+
+			local Terrain =
+				workspace:FindFirstChildOfClass("Terrain")
+
+			if Terrain then
+				Terrain.Decoration = false
+				Terrain.WaterWaveSize = 0
+				Terrain.WaterWaveSpeed = 0
+				Terrain.WaterReflectance = 0
+			end
+		end)
+
+		pcall(function()
+			settings().Rendering.QualityLevel =
+				Enum.QualityLevel.Level01
+		end)
+
+		FPSButton.Text = "⚡ FPS BOOST : ON"
+		FPSButton.BackgroundColor3 =
+			Color3.fromRGB(45,105,60)
+
+	else
+
+		for obj,state in pairs(SavedEffects) do
+
+			if obj and obj.Parent then
+				obj.Enabled = state
+			end
+		end
+
+		table.clear(SavedEffects)
+
+		FPSButton.Text = "⚡ FPS BOOST : OFF"
+		FPSButton.BackgroundColor3 = PANEL2
+	end
+end
+
+FPSButton.MouseButton1Click:Connect(function()
+	SetFPS(not FPSBoost)
+end)
+
+SetScale(1)
+
+--==================================================
+-- SETTINGS BUTTON
+--==================================================
+
+SettingsButton.MouseButton1Click:Connect(function()
+
+	SettingsPanel.Visible =
+		not SettingsPanel.Visible
+end)
+
+--==================================================
+-- TAB SYSTEM
+--==================================================
+
+local function SelectTab(tab)
+
+	MainPage.Visible = false
+	ZonePage.Visible = false
+	QuestPage.Visible = false
+	SettingsPanel.Visible = false
+
+	MainTab.BackgroundColor3 = PANEL2
+	ZoneTab.BackgroundColor3 = PANEL2
+	QuestTab.BackgroundColor3 = PANEL2
+
+	if tab == "Main" then
+
+		MainPage.Visible = true
+		MainTab.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+
+	elseif tab == "Zone" then
+
+		ZonePage.Visible = true
+		ZoneTab.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+
+	elseif tab == "Quest" then
+
+		QuestPage.Visible = true
+		QuestTab.BackgroundColor3 =
+			Color3.fromRGB(82,22,72)
+	end
+end
+
+MainTab.MouseButton1Click:Connect(function()
+	SelectTab("Main")
+end)
+
+ZoneTab.MouseButton1Click:Connect(function()
+	SelectTab("Zone")
+end)
+
+QuestTab.MouseButton1Click:Connect(function()
+	SelectTab("Quest")
+end)
+
+SelectTab("Main")
+
+--==================================================
+-- OPEN / CLOSE
+--==================================================
+
+Minimize.MouseButton1Click:Connect(function()
+
+	Main.Visible = false
+	OpenButton.Visible = true
+
+end)
+
+OpenButton.MouseButton1Click:Connect(function()
+
+	Main.Visible = true
+	OpenButton.Visible = false
+
+end)
+
+Close.MouseButton1Click:Connect(function()
+
+	ScreenGui:Destroy()
+
+end)
+
+--==================================================
+-- DRAG
+--==================================================
+
+local dragging = false
+local dragStart
+local startPos
+
+Header.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+	or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
+	end
+end)
+
+Header.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+	or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+
+	if not dragging then return end
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+	or input.UserInputType ==
+		Enum.UserInputType.Touch then
+
+		local delta =
+			input.Position - dragStart
+
+		Main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+--==================================================
+-- RIGHT ALT
+--==================================================
+
+UIS.InputBegan:Connect(function(input,processed)
+
+	if processed then return end
+
+	if input.KeyCode == Enum.KeyCode.RightAlt then
+
+		Main.Visible = not Main.Visible
+		OpenButton.Visible = not Main.Visible
+	end
+end)
+
+--==================================================
+-- SAFE MAP LOADER
+--==================================================
+
+local Zones = nil
+
+task.spawn(function()
+
+	for i = 1,60 do
+
+		local MapResources =
+			workspace:FindFirstChild("MapResources")
+
+		if MapResources then
+
+			Zones =
+				MapResources:FindFirstChild("Zones")
+
+			if Zones then
+				print("[TEDDY] MapResources/Zones loaded")
+				break
+			end
+		end
+
+		task.wait(.5)
+	end
+
+	if not Zones then
+		warn("[TEDDY] Không tìm thấy MapResources/Zones")
+	end
+end)
+
+--==================================================
+-- ZONE FUNCTIONS
+--==================================================
+
+local function GetZone(index)
+
+	if not Zones then
+		return nil
+	end
+
+	local target = Vector3.new(
+		L[index][1],
+		L[index][2],
+		L[index][3]
+	)
+
+	local nearest = nil
+	local shortest = math.huge
+
+	for _,zone in ipairs(Zones:GetChildren()) do
+
+		local core =
+			zone:FindFirstChild("LightCore")
+
+		if core then
+
+			local pos
+
+			if zone:IsA("BasePart") then
+
+				pos = zone.Position
+
+			elseif zone:IsA("Model") then
+
+				pos = zone:GetPivot().Position
+
+			elseif core:IsA("BasePart") then
+
+				pos = core.Position
+			end
+
+			if pos then
+
+				local distance =
+					(pos-target).Magnitude
+
+				if distance < shortest then
+
+					shortest = distance
+					nearest = zone
+				end
+			end
+		end
+	end
+
+	return nearest
+end
+
+local function IsGreen(core)
+
+	if not core then
+		return false
+	end
+
+	if not core:IsA("BasePart") then
+		return false
+	end
+
+	local c = core.Color
+
+	return c.R < .1
+		and c.G > .9
+		and c.B < .1
+end
+
+local function TeleportZone(index)
+
+	local char = Player.Character
+	if not char then return end
+
+	local root =
+		char:FindFirstChild("HumanoidRootPart")
+
+	if not root then return end
+
+	root.CFrame = CFrame.new(
+		L[index][4],
+		L[index][5],
+		L[index][6]
+	)
+
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
+end
+
+--==================================================
+-- FIND NON-GREEN ZONE
+--==================================================
+
+local function FindFarmZone()
+
+	if not Zones then
+		return nil
+	end
+
+	for i = 1,9 do
+
+		if FarmZone[i] then
+
+			local zone = GetZone(i)
+
+			local core =
+				zone and
+				zone:FindFirstChild("LightCore")
+
+			if core and not IsGreen(core) then
+				return i
+			end
+		end
+	end
+
+	return nil
+end
+
+--==================================================
+-- AUTO FARM
+--==================================================
+
+task.spawn(function()
+
+	while task.wait(.25) do
+
+		if AutoFarm then
+
+			local zoneIndex =
+				FindFarmZone()
+
+			if zoneIndex then
+
+				local zone =
+					GetZone(zoneIndex)
+
+				local core =
+					zone and
+					zone:FindFirstChild("LightCore")
+
+				if core then
+
+					TeleportZone(zoneIndex)
+
+					QuestStatus.Text =
+						"Đang farm Zone "..zoneIndex
+
+					QuestStatus.TextColor3 =
+						LIGHT_PINK
+
+					while AutoFarm
+					and FarmZone[zoneIndex]
+					and core
+					and not IsGreen(core) do
+
+						local char =
+							Player.Character
+
+						local root =
+							char and
+							char:FindFirstChild(
+								"HumanoidRootPart"
+							)
+
+						if root then
+
+							root.CFrame =
+								CFrame.new(
+									L[zoneIndex][4],
+									L[zoneIndex][5],
+									L[zoneIndex][6]
+								)
+
+							root.AssemblyLinearVelocity =
+								Vector3.zero
+
+							root.AssemblyAngularVelocity =
+								Vector3.zero
+						end
+
+						task.wait(.15)
+					end
+				end
+
+			else
+
+				-- SAFE POSITION = ZONE 3
+				local char =
+					Player.Character
+
+				local root =
+					char and
+					char:FindFirstChild(
+						"HumanoidRootPart"
+					)
+
+				if root then
+
+					local safe =
+						Vector3.new(
+							L[3][4],
+							L[3][5],
+							L[3][6]
+						)
+
+					if (root.Position-safe).Magnitude > 5 then
+
+						root.CFrame =
+							CFrame.new(safe)
+
+						root.AssemblyLinearVelocity =
+							Vector3.zero
+
+						root.AssemblyAngularVelocity =
+							Vector3.zero
+					end
+				end
+
+				QuestStatus.Text =
+					"Tất cả Zone xanh • Z3"
+
+				QuestStatus.TextColor3 =
+					Color3.fromRGB(80,255,120)
+			end
+		end
+	end
+end)
+
+--==================================================
+-- AUTO FARM BUTTON
+--==================================================
+
+AutoToggle.MouseButton1Click:Connect(function()
+
+	AutoFarm = not AutoFarm
+
+	if AutoFarm then
+
+		AutoToggle.Text = "ON"
+		AutoToggle.BackgroundColor3 =
+			Color3.fromRGB(105,25,85)
+
+	else
+
+		AutoToggle.Text = "OFF"
+		AutoToggle.BackgroundColor3 =
+			Color3.fromRGB(45,24,50)
+	end
+end)
+
+--==================================================
+-- QUEST DETECTION
+--==================================================
+
+task.spawn(function()
+
+	while task.wait(.3) do
+
+		pcall(function()
+
+			local gui =
+				Player:FindFirstChild("PlayerGui")
+
+			local gameUI =
+				gui and
+				gui:FindFirstChild("GameUI")
+
+			local quests =
+				gameUI and
+				gameUI:FindFirstChild("QuestsFrame")
+
+			local detected = "None"
+
+			if quests then
+
+				for _,child in ipairs(
+					quests:GetChildren()
+				) do
+
+					local text = ""
+
+					for _,desc in ipairs(
+						child:GetDescendants()
+					) do
+
+						if desc:IsA("TextLabel") then
+
+							text =
+								text.." "
+								..string.lower(
+									desc.Text
+								)
+						end
+					end
+
+					if string.find(
+						text,
+						"eat something"
+					) then
+
+						detected = "Eat"
+						break
+
+					elseif string.find(
+						text,
+						"drink water"
+					) then
+
+						detected = "Drink"
+						break
+
+					elseif string.find(
+						text,
+						"rest"
+					) then
+
+						detected = "Rest"
+						break
+					end
+				end
+			end
+
+			_G.CurrentQuest = detected
+
+			if detected == "Eat" then
+
+				QuestStatus.Text = "Quest: EAT"
+				QuestStatus.TextColor3 =
+					Color3.fromRGB(80,255,80)
+
+				QuestPageStatus.Text =
+					"Current Quest: Eat"
+
+				QuestPageStatus.TextColor3 =
+					Color3.fromRGB(80,255,80)
+
+			elseif detected == "Drink" then
+
+				QuestStatus.Text = "Quest: DRINK"
+				QuestStatus.TextColor3 =
+					Color3.fromRGB(100,180,255)
+
+				QuestPageStatus.Text =
+					"Current Quest: Drink"
+
+				QuestPageStatus.TextColor3 =
+					Color3.fromRGB(100,180,255)
+
+			elseif detected == "Rest" then
+
+				QuestStatus.Text = "Quest: REST"
+				QuestStatus.TextColor3 =
+					Color3.fromRGB(255,180,100)
+
+				QuestPageStatus.Text =
+					"Current Quest: Rest"
+
+				QuestPageStatus.TextColor3 =
+					Color3.fromRGB(255,180,100)
+
+			else
+
+				QuestPageStatus.Text =
+					"Current Quest: Waiting..."
+
+			end
+		end)
+	end
+end)
+
+--==================================================
+-- AUTO EAT
+--==================================================
+
+task.spawn(function()
+
+	local remote
+
+	pcall(function()
+		remote =
+			RS.Remotes.Character.Eat
+	end)
+
+	while task.wait(.4) do
+
+		if _G.AutoEatRunning
+		and _G.CurrentQuest == "Eat"
+		and remote then
+
+			pcall(function()
+
+				local env =
+					workspace:FindFirstChild(
+						"MapEnvironment"
+					)
+
+				if not env then return end
+
+				local char =
+					Player.Character
+
+				local root =
+					char and
+					char:FindFirstChild(
+						"HumanoidRootPart"
+					)
+
+				if not root then return end
+
+				local closest = nil
+				local shortest = math.huge
+
+				local folders = {
+
+					{
+						env:FindFirstChild("RedWood"),
+						"Trees",
+						"RedWoodTree"
+					},
+
+					{
+						env:FindFirstChild("Pines"),
+						"Trees",
+						"PineTree"
+					},
+
+					{
+						env:FindFirstChild("Desert"),
+						"Tress",
+						"DesertTree"
+					},
+
+					{
+						env:FindFirstChild("Lobby"),
+						"Trees",
+						"RedWoodTree"
+					}
+				}
+
+				for _,data in ipairs(folders) do
+
+					local folder =
+						data[1] and
+						data[1]:FindFirstChild(data[2])
+
+					if folder then
+
+						for _,tree in ipairs(
+							folder:GetChildren()
+						) do
+
+							if tree.Name == data[3] then
+
+								local part
+
+								if tree:IsA("BasePart") then
+									part = tree
+								else
+									part =
+										tree:FindFirstChildWhichIsA(
+											"BasePart"
+										)
+								end
+
+								if part then
+
+									local d =
+										(root.Position-
+										part.Position).Magnitude
+
+									if d < shortest then
+
+										shortest = d
+										closest = tree
+									end
+								end
+							end
+						end
+					end
+				end
+
+				if closest then
+					remote:FireServer(closest)
+				end
+			end)
+		end
+	end
+end)
+
+--==================================================
+-- AUTO DRINK
+--==================================================
+
+task.spawn(function()
+
+	while task.wait(.8) do
+
+		if _G.AutoDrinkRunning
+		and _G.CurrentQuest == "Drink" then
+
+			pcall(function()
+
+				local folder =
+					RS:FindFirstChild("Remotes")
+
+				local character =
+					folder and
+					folder:FindFirstChild("Character")
+
+				local functions =
+					character and
+					character:FindFirstChild(
+						"CharacterFunctions"
+					)
+
+				if functions then
+					functions:InvokeServer("Drink")
+				end
+			end)
+		end
+	end
+end)
+
+--==================================================
+-- AUTO REST
+--==================================================
+
+task.spawn(function()
+
+	local resting = false
+
+	while task.wait(.3) do
+
+		local shouldRest =
+			_G.AutoRestRunning
+			and _G.CurrentQuest == "Rest"
+
+		pcall(function()
+
+			local folder =
+				RS:FindFirstChild("Remotes")
+
+			local character =
+				folder and
+				folder:FindFirstChild("Character")
+
+			local remote =
+				character and
+				character:FindFirstChild("Rest")
+
+			if not remote then return end
+
+			if shouldRest and not resting then
+
+				remote:InvokeServer(true)
+				resting = true
+
+			elseif not shouldRest and resting then
+
+				remote:InvokeServer(false)
+				resting = false
+			end
+		end)
+	end
+end)
+
+--==================================================
+-- QUEST BUTTONS
+--==================================================
+
+EatButton.MouseButton1Click:Connect(function()
+
+	_G.AutoEatRunning =
+		not _G.AutoEatRunning
+
+	if _G.AutoEatRunning then
+
+		EatButton.Text = "AUTO EAT : ON"
+		EatButton.BackgroundColor3 =
+			Color3.fromRGB(45,105,60)
+
+	else
+
+		EatButton.Text = "AUTO EAT : OFF"
+		EatButton.BackgroundColor3 = PANEL2
+	end
+end)
+
+DrinkButton.MouseButton1Click:Connect(function()
+
+	_G.AutoDrinkRunning =
+		not _G.AutoDrinkRunning
+
+	if _G.AutoDrinkRunning then
+
+		DrinkButton.Text = "AUTO DRINK : ON"
+		DrinkButton.BackgroundColor3 =
+			Color3.fromRGB(45,105,60)
+
+	else
+
+		DrinkButton.Text = "AUTO DRINK : OFF"
+		DrinkButton.BackgroundColor3 = PANEL2
+	end
+end)
+
+RestButton.MouseButton1Click:Connect(function()
+
+	_G.AutoRestRunning =
+		not _G.AutoRestRunning
+
+	if _G.AutoRestRunning then
+
+		RestButton.Text = "AUTO REST : ON"
+		RestButton.BackgroundColor3 =
+			Color3.fromRGB(45,105,60)
+
+	else
+
+		RestButton.Text = "AUTO REST : OFF"
+		RestButton.BackgroundColor3 = PANEL2
+	end
+end)
+
+--==================================================
+-- FINAL
+--==================================================
+
+print("================================")
+print(" TEDDY PRIMEVAL GUI LOADED")
+print(" FARM / ZONE / QUEST / SETTINGS")
+print("================================")
